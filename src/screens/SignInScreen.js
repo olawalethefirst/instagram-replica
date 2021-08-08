@@ -1,12 +1,14 @@
-import React, { useReducer } from 'react';
-import { TextInput, View, Button } from 'react-native';
-import firebase from 'firebase';
+import React, { useReducer, useState } from 'react';
+import { TextInput, View, Button, Text } from 'react-native';
+import firebase from 'firebase/app';
+import 'firebase/auth';
 
-export default function RegisterScreen() {
+export default function SignInScreen() {
+    const [error, setError] = useState('');
+
     //Action Types
     const UPDATE_EMAIL = 'UPDATE_EMAIL';
     const UPDATE_PASSWORD = 'UPDATE_PASSWORD';
-    const UPDATE_NAME = 'UPDATE_NAME';
 
     //Reducer
     const reducer = (state, action) => {
@@ -15,8 +17,6 @@ export default function RegisterScreen() {
                 return { ...state, email: action.payload };
             case UPDATE_PASSWORD:
                 return { ...state, password: action.payload };
-            case UPDATE_NAME:
-                return { ...state, name: action.payload };
             default:
                 return state;
         }
@@ -25,17 +25,11 @@ export default function RegisterScreen() {
     const [state, dispatch] = useReducer(reducer, {
         email: '',
         password: '',
-        name: '',
     });
 
     //Dispatcher generator
     const updateField = (type, value) => {
         switch (type) {
-            case 'name':
-                return dispatch({
-                    type: UPDATE_NAME,
-                    payload: value,
-                });
             case 'email':
                 return dispatch({
                     type: UPDATE_EMAIL,
@@ -51,33 +45,19 @@ export default function RegisterScreen() {
         }
     };
 
-    const onSignUp = () => {
+    const onSignIn = () => {
         const { name, email, password } = state;
         firebase
             .auth()
-            .createUserWithEmailAndPassword(email, password)
+            .signInWithEmailAndPassword(email, password)
             .then((result) => {
-                firebase
-                    .firestore()
-                    .collection('users')
-                    .doc(firebase.auth().currentUser.uid)
-                    .set({
-                        name,
-                        email,
-                    });
+                console.log(result);
             })
-            .catch((err) => console.log(err));
+            .catch((err) => setError(err.message));
     };
 
     return (
         <View>
-            <TextInput
-                autoCorrect={false}
-                autoCapitalize="none"
-                placeholder="Name"
-                value={state.name}
-                onChangeText={(text) => updateField('name', text)}
-            />
             <TextInput
                 autoCorrect={false}
                 autoCapitalize="none"
@@ -91,7 +71,8 @@ export default function RegisterScreen() {
                 value={state.password}
                 onChangeText={(text) => updateField('password', text)}
             />
-            <Button title="Sign Up" onPress={() => onSignUp()} />
+            {error ? <Text>{'Error: ' + error}</Text> : null}
+            <Button title="Sign In" onPress={() => onSignIn()} />
         </View>
     );
 }

@@ -2,21 +2,32 @@ import React, { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { fetchUser, fetchUserPosts } from '../redux/actions/index';
+import {
+    fetchUser,
+    fetchUserPosts,
+    fetchFollowing,
+} from '../redux/actions/index';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import FeedScreen from './FeedScreen';
 import ProfileScreen from './ProfileScreen';
 import SearchScreen from './SearchScreen';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import firebase from 'firebase/app';
+import 'firebase/auth';
 
 const Tab = createMaterialBottomTabNavigator();
 const EmptyScreen = () => null;
 
-const MainScreen = function ({ fetchUser, fetchUserPosts, currentUser }) {
+const MainScreen = function ({
+    fetchUser,
+    fetchUserPosts,
+    fetchFollowing,
+    currentUser,
+}) {
     useEffect(() => {
         fetchUser();
         fetchUserPosts();
+        fetchFollowing();
     }, []);
 
     if (currentUser === undefined) {
@@ -102,7 +113,7 @@ const MainScreen = function ({ fetchUser, fetchUserPosts, currentUser }) {
 };
 
 const mapDispatchToProps = (dispatch) =>
-    bindActionCreators({ fetchUser, fetchUserPosts }, dispatch);
+    bindActionCreators({ fetchUser, fetchUserPosts, fetchFollowing }, dispatch);
 
 const mapStateToProps = (state) => ({
     currentUser: state.user.currentUser,

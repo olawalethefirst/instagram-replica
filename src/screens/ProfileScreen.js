@@ -8,9 +8,9 @@ import {
     TouchableOpacity,
 } from 'react-native';
 import { connect } from 'react-redux';
-import { fetchUserPosts } from '../redux/actions/index';
-import Constants from 'expo-constants';
+import { clearData } from '../redux/actions/index';
 import firebase from 'firebase/app';
+import 'firebase/auth';
 
 function ProfileScreen({
     route: {
@@ -18,7 +18,7 @@ function ProfileScreen({
     },
     currentUser,
     posts,
-    fetchUserPosts,
+    clearData,
 }) {
     const [user, setUser] = useState(null);
     const [userPosts, setUserPosts] = useState([]);
@@ -59,6 +59,10 @@ function ProfileScreen({
                     setFollowing(false);
                 }
             });
+    };
+    const onSignOut = () => {
+        clearData();
+        firebase.auth().signOut();
     };
     useEffect(() => {
         if (uid === firebase.auth().currentUser.uid) {
@@ -103,19 +107,25 @@ function ProfileScreen({
             <View style={styles.infoContainer}>
                 <Text>{user.name}</Text>
                 <Text>{user.email}</Text>
-                {uid !== firebase.auth().currentUser.uid &&
-                    (following === null ? (
-                        <TouchableOpacity style={{ backgroundColor: 'grey' }}>
-                            <Text>Loading</Text>
-                        </TouchableOpacity>
-                    ) : (
-                        <TouchableOpacity
-                            style={{ backgroundColor: 'grey' }}
-                            onPress={following ? onUnFollow : onFollow}
-                        >
-                            <Text>{following ? 'Following' : 'Follow'}</Text>
-                        </TouchableOpacity>
-                    ))}
+                {uid === firebase.auth().currentUser.uid ? (
+                    <TouchableOpacity
+                        style={{ backgroundColor: 'grey' }}
+                        onPress={onSignOut}
+                    >
+                        <Text>Sign Out</Text>
+                    </TouchableOpacity>
+                ) : following === null ? (
+                    <TouchableOpacity style={{ backgroundColor: 'grey' }}>
+                        <Text>Loading</Text>
+                    </TouchableOpacity>
+                ) : (
+                    <TouchableOpacity
+                        style={{ backgroundColor: 'grey' }}
+                        onPress={following ? onUnFollow : onFollow}
+                    >
+                        <Text>{following ? 'Following' : 'Follow'}</Text>
+                    </TouchableOpacity>
+                )}
             </View>
             <View style={styles.galleryContainer}>
                 <FlatList
@@ -146,13 +156,12 @@ const mapStateToProps = (state) => ({
 });
 
 const mapDispatchToProps = (dispatch) => ({
-    fetchUserPosts: () => dispatch(fetchUserPosts),
+    clearData: () => dispatch(clearData),
 });
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        // marginTop: Constants.statusBarHeight,
     },
     infoContainer: {
         margin: 20,

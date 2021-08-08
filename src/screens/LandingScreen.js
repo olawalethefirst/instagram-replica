@@ -9,8 +9,8 @@ export default function LandingScreen({ navigation }) {
                 onPress={() => navigation.navigate('Register')}
             />
             <Button
-                title="Login"
-                onPress={() => navigation.navigate('Login')}
+                title="Sign In"
+                onPress={() => navigation.navigate('SignIn')}
             />
         </View>
     );

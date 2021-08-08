@@ -4,6 +4,7 @@ import { View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import firebase from 'firebase/app';
+import 'firebase/auth';
 import LandingScreen from './src/screens/LandingScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import store from './src/redux/store/store';
@@ -11,6 +12,8 @@ import { Provider } from 'react-redux';
 import MainScreen from './src/screens/MainScreen';
 import AddScreen from './src/screens/AddScreen';
 import SaveScreen from './src/screens/SaveScreen';
+import SignInScreen from './src/screens/SignInScreen';
+import CommentsScreen from './src/screens/CommentsScreen';
 
 const firebaseConfig = {
     apiKey: 'AIzaSyAyIoPbBEpJpU6KePNK2W0aZQHfAHtdf_A',
@@ -61,6 +64,7 @@ export default function App() {
                         options={{ headerShown: false }}
                     />
                     <Stack.Screen name="Register" component={RegisterScreen} />
+                    <Stack.Screen name="SignIn" component={SignInScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
         );
@@ -73,6 +77,7 @@ export default function App() {
                     <Stack.Screen name="Main" component={MainScreen} />
                     <Stack.Screen name="Add" component={AddScreen} />
                     <Stack.Screen name="Save" component={SaveScreen} />
+                    <Stack.Screen name="Comments" component={CommentsScreen} />
                 </Stack.Navigator>
             </NavigationContainer>
         </Provider>

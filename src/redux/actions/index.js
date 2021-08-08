@@ -1,11 +1,17 @@
 import firebase from 'firebase/app';
+import 'firebase/auth';
+import 'firebase/firestore';
+
 import {
     USER_POSTS_STATE_CHANGE,
     USER_STATE_CHANGE,
     USER_FOLLOWING_STATE_CHANGE,
     USERS_DATA_STATE_CHANGE,
-    USERS_POSTS_STATE_CHANGE,
-    INCREASE_COUNT,
+    USERS_POSTS_STATE_CREATE,
+    USERS_POSTS_STATE_UPDATE,
+    CLEAR_DATA,
+    USER_LIKES_STATE_CHANGE,
+    LIKES_COUNT_STATE_CHANGE,
 } from '../constants/index';
 
 export function fetchUser() {
@@ -15,11 +21,13 @@ export function fetchUser() {
             .collection('users')
             .doc(firebase.auth().currentUser.uid)
             .get()
-            .then((snapshot) => {
-                if (snapshot.exists) {
+            .then((doc) => {
+                if (doc.exists) {
+                    const user = doc.data();
+                    user.uid = doc.id;
                     dispatch({
                         type: USER_STATE_CHANGE,
-                        payload: snapshot.data(),
+                        payload: user,
                     });
                 } else {
                     console.log('does not exist');
@@ -57,17 +65,18 @@ export function fetchUserPosts() {
 export function fetchFollowing() {
     return (dispatch) => {
         firebase
+            .firestore()
             .collection('following')
             .doc(firebase.auth().currentUser.uid)
             .collection('userFollowing')
-            .snapshot((doc) => {
+            .onSnapshot((doc) => {
                 const following = doc.docs.map((doc) => doc.id);
                 dispatch({
                     type: USER_FOLLOWING_STATE_CHANGE,
                     payload: following,
                 });
-                for (uid in following) {
-                    dispatch(fetchUsersData(uid));
+                for (let i = 0; i < following.length; i++) {
+                    dispatch(fetchUsersData(following[i]));
                 }
             });
     };
@@ -76,12 +85,12 @@ export function fetchFollowing() {
 export function fetchUsersData(uid) {
     return (dispatch, getState) => {
         const found = getState().users.usersData.some(
-            (user) => user.id === uid
+            (user) => user.uid === uid
         );
         if (found === false) {
             firebase
                 .firestore()
-                .collection('posts')
+                .collection('users')
                 .doc(uid)
                 .get()
                 .then((doc) => {
@@ -93,7 +102,6 @@ export function fetchUsersData(uid) {
                             payload: user,
                         });
                         dispatch(fetchUsersFollowingPosts(uid));
-                        dispatch();
                     } else {
                         console.log('user not found');
                     }
@@ -102,39 +110,88 @@ export function fetchUsersData(uid) {
     };
 }
 
-export function fetchUsersFollowingPosts(id) {
+export function fetchUsersFollowingPosts(uid) {
     return (dispatch, getState) => {
+        let firstRunComplete;
         firebase
             .firestore()
             .collection('posts')
             .doc(uid)
-            .collection('usePosts')
+            .collection('userPosts')
             .orderBy('creation', 'asc')
             .onSnapshot((doc) => {
-                console.log(id === doc.query.EP.path.segments[1]);
-                const uid = doc.query.EP.path.segments[1];
-                const user = getState().users.usersData.find(
-                    (user) => user.uid === uid
-                );
+                const user = getState().users.usersData.find((user) => {
+                    return user.uid === uid;
+                });
                 const posts = doc.docs.map((doc) => {
                     const post = doc.data();
                     post.id = doc.id;
                     return { ...post, user };
                 });
-                const payload = { posts, uid };
-                getState().users.usersData.find((user) => {
-                    if (user.uid === uid && !user.posts) {
-                        dispatch(updateLoadedCount);
-                    }
-                });
-                dispatch({
-                    type: USERS_POSTS_STATE_CHANGE,
-                    payload,
-                });
+
+                if (firstRunComplete) {
+                    dispatch({
+                        type: USERS_POSTS_STATE_UPDATE,
+                        payload: posts,
+                    });
+                } else {
+                    dispatch({
+                        type: USERS_POSTS_STATE_CREATE,
+                        payload: posts,
+                    });
+                    firstRunComplete = true;
+                }
+                for (let i = 0; i < posts.length; i++) {
+                    dispatch(fetchUsersFollowingLikes(uid, posts[i].id));
+                }
+                for (let i = 0; i < posts.length; i++) {
+                    dispatch(fetchPostLikesCount(uid, posts[i].id));
+                }
             });
     };
 }
 
-export const updateLoadedCount = {
-    type: INCREASE_COUNT,
+export const clearData = {
+    type: CLEAR_DATA,
 };
+
+export function fetchUsersFollowingLikes(uid, postID) {
+    return (dispatch) => {
+        firebase
+            .firestore()
+            .collection('posts')
+            .doc(uid)
+            .collection('userPosts')
+            .doc(postID)
+            .collection('likes')
+            .doc(firebase.auth().currentUser.uid)
+            .onSnapshot((doc) => {
+                let currentUserLike;
+                if (doc.exists) {
+                    currentUserLike = true;
+                } else {
+                    currentUserLike = false;
+                }
+                const payload = { currentUserLike, postID };
+                // console.log(payload);
+                dispatch({ type: USER_LIKES_STATE_CHANGE, payload });
+            });
+    };
+}
+
+export function fetchPostLikesCount(uid, postID) {
+    return (dispatch) => {
+        firebase
+            .firestore()
+            .collection('posts')
+            .doc(uid)
+            .collection('userPosts')
+            .doc(postID)
+            .collection('likes')
+            .onSnapshot((doc) => {
+                const count = doc.docs.length;
+                const payload = { count, postID };
+                dispatch({ type: LIKES_COUNT_STATE_CHANGE, payload });
+            });
+    };
+}

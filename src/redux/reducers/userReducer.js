@@ -2,6 +2,7 @@ import {
     USER_STATE_CHANGE,
     USER_POSTS_STATE_CHANGE,
     USER_FOLLOWING_STATE_CHANGE,
+    CLEAR_DATA,
 } from '../constants/index';
 
 const initialState = {
@@ -27,6 +28,8 @@ export default function userReducer(state = initialState, action) {
                 ...state,
                 following: action.payload,
             };
+        case CLEAR_DATA:
+            return initialState;
         default:
             return state;
     }
